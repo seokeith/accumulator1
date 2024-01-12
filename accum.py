@@ -1,28 +1,34 @@
 import streamlit as st
 
-def calculate_payout(initial_bet, odds, multipliers):
-    payout = initial_bet
-    for i in range(len(odds)):
-        payout *= odds[i] * (multipliers[i] if i < len(multipliers) else 1)
-    return payout
+def fractional_odds_to_decimal(fraction):
+    num, denom = map(int, fraction.split('/'))
+    return num / denom + 1
+
+def calculate_payout(unit_stake, odds, each_way):
+    total_payout = 0
+    for odd in odds:
+        decimal_odd = fractional_odds_to_decimal(odd)
+        payout = unit_stake * decimal_odd
+        total_payout += payout
+        if each_way:
+            # Assuming each way bet pays 1/4 the odds for places
+            total_payout += unit_stake * (decimal_odd / 4)
+    return total_payout
 
 # App title
 st.title("Accumulator Bet Payout Calculator")
 
 # User inputs
-initial_bet = st.number_input("Enter your initial bet", min_value=0.0, value=10.0)
+unit_stake = st.number_input("Enter your unit stake", min_value=0.0, value=10.0)
 number_of_bets = st.slider("Select number of bets", 1, 10, 3)
+each_way = st.checkbox("Each Way Bet")
 
 odds = []
-multipliers = []
 for i in range(number_of_bets):
-    odd = st.number_input(f"Enter odds for bet {i+1}", min_value=1.0, value=2.0, key=f"odds_{i}")
+    odd = st.text_input(f"Enter fractional odds for bet {i+1} (e.g., 2/1)", value="2/1", key=f"odds_{i}")
     odds.append(odd)
-    if i < number_of_bets - 1: # Assuming multipliers are for transitions between bets
-        multiplier = st.number_input(f"Enter multiplier after bet {i+1}", min_value=1.0, value=1.0, key=f"multiplier_{i}")
-        multipliers.append(multiplier)
 
 if st.button("Calculate Payout"):
-    payout = calculate_payout(initial_bet, odds, multipliers)
+    payout = calculate_payout(unit_stake, odds, each_way)
     st.success(f"Your total payout is {payout:.2f}")
-
+    
